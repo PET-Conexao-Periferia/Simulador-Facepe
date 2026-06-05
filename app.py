@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import time
 from PIL import Image
-from randomWalk import RandomWalkModel, State
+from backend.randomWalk import RandomWalkModel, State
 
 st.set_page_config(page_title="Simulador de Pandemia", layout="wide")
 

@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# Node / React
+node_modules/
+dist/
+.vite/
+
+# Sistema
+.DS_Store
+Thumbs.db
