@@ -141,7 +141,7 @@ function LogoPill() {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.surface, border: `0.5px solid ${C.border}`, borderRadius: 20, padding: "6px 14px 6px 8px" }}>
       <div style={{ width: 22, height: 22, background: C.greenDark, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>🦠</div>
-      <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: "#C9D1D9", fontWeight: 500 }}>PeriferiaLab</span>
+      <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: "#C9D1D9", fontWeight: 500 }}>PET - Conexão Periferia</span>
     </div>
   );
 }
@@ -461,7 +461,7 @@ function Screen2({ hypothesisId, cityId, hypothesisText, onBack }: {
             <button onClick={onBack} style={{ all: "unset", cursor: "pointer", color: C.textMuted, fontSize: 18, lineHeight: 1, marginRight: 4 }} title="Voltar">←</button>
             <div style={{ width: 28, height: 28, borderRadius: 6, background: "linear-gradient(135deg, #4ADE80, #22D3EE)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🦠</div>
             <div>
-              <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 500, color: C.textPrimary }}>PeriferiaLab</div>
+              <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 500, color: C.textPrimary }}>PET - Conexão Periferia</div>
               <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: C.textMuted, textTransform: "uppercase", marginTop: 1 }}>Simulador de Pandemias</div>
             </div>
           </div>
