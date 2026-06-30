@@ -14,6 +14,7 @@ const C = {
 // ─── interfaces ───────────────────────────────────────────────────────────────
 interface ScenarioResult {
   healthy: number[]; sick: number[]; dead: number[]; immune: number[];
+  grid_history: number[][];
   final_deaths: number; total_population: number;
 }
 interface SimResult { scenario1: ScenarioResult; scenario2: ScenarioResult; }
@@ -81,6 +82,24 @@ const HYPOTHESES = [
 
 type HypothesisId = (typeof HYPOTHESES)[number]["id"];
 type CityId = (typeof CITIES)[number]["id"];
+type InterventionKey = "vaccination" | "masks" | "distancing" | "lockdown";
+interface InterventionSettings {
+  vaccination: boolean;
+  vaccination_pct: number;
+  vaccination_week: number;
+  masks: boolean;
+  masks_adherence: number;
+  masks_start: number;
+  masks_end: number;
+  distancing: boolean;
+  distancing_intensity: number;
+  distancing_start: number;
+  distancing_end: number;
+  lockdown: boolean;
+  lockdown_intensity: number;
+  lockdown_start: number;
+  lockdown_end: number;
+}
 type AppScreen = "home" | "result" | "sobre";
 
 // ─── AnimatedBackground ───────────────────────────────────────────────────────
@@ -90,10 +109,12 @@ const CELL_COLORS = ["#0d3318", "#0a1f45", "#4a1010", "#3d2a05", "#1a1d21"];
 function AnimatedBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
-    const canvas = canvasRef.current; if (!canvas) return;
-    const ctx = canvas.getContext("2d"); if (!ctx) return;
+    const canvasEl = canvasRef.current; if (!canvasEl) return;
+    const ctx = canvasEl.getContext("2d"); if (!ctx) return;
+    const drawingCanvas = canvasEl;
+    const drawingCtx = ctx;
     let w = window.innerWidth; let h = window.innerHeight;
-    canvas.width = w; canvas.height = h;
+    drawingCanvas.width = w; drawingCanvas.height = h;
     let cols = Math.ceil(w / STEP); let rows = Math.ceil(h / STEP); let total = cols * rows;
     let states = new Uint8Array(total); let infectedAt = new Int32Array(total).fill(-1); let tick = 0;
     function init(c: number, r: number) {
@@ -107,10 +128,10 @@ function AnimatedBackground() {
     }
     const initial = init(cols, rows); states = initial.s; infectedAt = initial.ia;
     function draw() {
-      ctx.clearRect(0, 0, w, h);
+      drawingCtx.clearRect(0, 0, w, h);
       for (let row = 0; row < rows; row++) for (let col = 0; col < cols; col++) {
-        ctx.fillStyle = CELL_COLORS[states[row * cols + col]];
-        ctx.fillRect(col * STEP, row * STEP, CELL_SIZE, CELL_SIZE);
+        drawingCtx.fillStyle = CELL_COLORS[states[row * cols + col]];
+        drawingCtx.fillRect(col * STEP, row * STEP, CELL_SIZE, CELL_SIZE);
       }
     }
     function update() {
@@ -130,7 +151,7 @@ function AnimatedBackground() {
     draw();
     const interval = setInterval(() => { update(); draw(); }, 400);
     function onResize() {
-      w = window.innerWidth; h = window.innerHeight; canvas.width = w; canvas.height = h;
+      w = window.innerWidth; h = window.innerHeight; drawingCanvas.width = w; drawingCanvas.height = h;
       cols = Math.ceil(w / STEP); rows = Math.ceil(h / STEP); total = cols * rows;
       const re = init(cols, rows); states = re.s; infectedAt = re.ia; tick = 0; draw();
     }
@@ -378,51 +399,142 @@ function SidebarSection({ children, style }: { children: React.ReactNode; style?
   return <div style={{ padding: "14px 16px", borderBottom: `0.5px solid ${C.border}`, ...style }}>{children}</div>;
 }
 
+function MeasurePanel({
+  title,
+  dot,
+  desc,
+  enabled,
+  expanded,
+  onToggle,
+  onExpand,
+  children,
+}: {
+  title: string;
+  dot: string;
+  desc: string;
+  enabled: boolean;
+  expanded: boolean;
+  onToggle: () => void;
+  onExpand: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      onClick={onExpand}
+      style={{
+        marginBottom: 10,
+        background: enabled ? "rgba(74,222,128,0.04)" : C.elevated,
+        border: `0.5px solid ${enabled ? C.green : C.border}`,
+        borderRadius: 8,
+        padding: 10,
+        transition: "all 0.15s ease",
+        cursor: "pointer",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
+          <div style={{ width: 7, height: 7, borderRadius: "50%", background: dot, flexShrink: 0 }} />
+          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 500, color: enabled ? C.textPrimary : "#C9D1D9" }}>{title}</span>
+        </div>
+        <div onClick={(e) => e.stopPropagation()}>
+          <Toggle on={enabled} onChange={onToggle} />
+        </div>
+      </div>
+
+      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: C.textMuted, margin: "6px 0 0", lineHeight: 1.4, paddingLeft: 14 }}>
+        {desc}
+      </p>
+
+      {enabled && expanded && (
+        <div style={{ marginTop: 12, paddingTop: 12, borderTop: `0.5px solid ${C.border}` }}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LoadingSpinner() {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: "22px 20px", background: C.surface, border: `0.5px solid ${C.border}`, borderRadius: 8 }}>
+      <style>{`
+        @keyframes sim-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      `}</style>
+      <div style={{ position: "relative", width: 44, height: 44 }}>
+        <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: `3px solid rgba(74, 222, 128, 0.14)`, borderTopColor: C.green, borderRightColor: C.blue, animation: "sim-spin 0.9s linear infinite" }} />
+        <div style={{ position: "absolute", inset: 12, borderRadius: "50%", background: C.bg, border: `1px solid ${C.border}` }} />
+      </div>
+      <div style={{ textAlign: "center" as const }}>
+        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.green, letterSpacing: "0.05em", textTransform: "uppercase" as const, marginBottom: 4 }}>Processando simulação</div>
+        <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: C.textMuted, lineHeight: 1.5 }}>Aguarde o grid terminar de avançar para liberar os resultados.</div>
+      </div>
+    </div>
+  );
+}
+
 // ─── PopulationGrid ───────────────────────────────────────────────────────────
 
 function PopulationGrid({ data, week, label, population }: { data: ScenarioResult | null; week: number; label: string; population: string }) {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const gridSize = data ? Math.round(Math.sqrt(data.total_population)) : 0;
+  const snapshot = data && week > 0 ? data.grid_history[Math.min(week - 1, data.grid_history.length - 1)] : null;
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const colorForState = (state: number) => {
+    if (state === 0) return C.greenDark;
+    if (state === 1) return C.red;
+    if (state === 2) return C.dead;
+    return C.blue;
+  };
 
   useEffect(() => {
-    const container = containerRef.current; const canvas = canvasRef.current;
-    if (!container || !canvas) return;
-    const ctx = canvas.getContext("2d"); if (!ctx) return;
-    const w = container.offsetWidth; const h = w;
-    canvas.width = w; canvas.height = h;
-    const CELL = 5; const GAP = 1; const S = CELL + GAP;
-    const cols = Math.ceil(w / S); const rows = Math.ceil(h / S);
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-    let healthyPct = 1, sickPct = 0, deadPct = 0;
-    if (data && week > 0) {
-      const idx = Math.min(week - 1, data.healthy.length - 1);
-      const pop = data.total_population;
-      healthyPct = data.healthy[idx] / pop;
-      sickPct = data.sick[idx] / pop;
-      deadPct = data.dead[idx] / pop;
-    }
-    const cdf = [
-      { color: C.greenDark, threshold: healthyPct },
-      { color: C.red,       threshold: healthyPct + sickPct },
-      { color: C.dead,      threshold: healthyPct + sickPct + deadPct },
-      { color: C.blue,      threshold: 1 },
-    ];
-    const pickColor = () => {
-      const r = Math.random();
-      for (const { color, threshold } of cdf) if (r <= threshold) return color;
-      return C.dead;
+    const draw = () => {
+      const rect = container.getBoundingClientRect();
+      const width = Math.max(1, Math.floor(rect.width));
+      const height = Math.max(1, Math.floor(rect.height));
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+      }
+
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = C.bg;
+      ctx.fillRect(0, 0, width, height);
+
+      if (!snapshot || !gridSize) return;
+
+      const cellWidth = width / gridSize;
+      const cellHeight = height / gridSize;
+
+      for (let index = 0; index < snapshot.length; index++) {
+        const row = Math.floor(index / gridSize);
+        const col = index % gridSize;
+        ctx.fillStyle = colorForState(snapshot[index]);
+        ctx.fillRect(Math.floor(col * cellWidth), Math.floor(row * cellHeight), Math.ceil(cellWidth), Math.ceil(cellHeight));
+      }
     };
 
-    ctx.clearRect(0, 0, w, h);
-    for (let row = 0; row < rows; row++) for (let col = 0; col < cols; col++) {
-      ctx.fillStyle = pickColor();
-      ctx.fillRect(col * S, row * S, CELL, CELL);
-    }
-  }, [data, week, label]);
+    draw();
+
+    const resizeObserver = new ResizeObserver(draw);
+    resizeObserver.observe(container);
+    window.addEventListener("resize", draw);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", draw);
+    };
+  }, [snapshot, gridSize]);
 
   return (
-    <div ref={containerRef} style={{ borderRadius: 8, border: `0.5px solid ${C.border}`, aspectRatio: "1 / 1", background: C.bg, position: "relative", overflow: "hidden" }}>
-      <canvas ref={canvasRef} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }} />
+    <div ref={containerRef} aria-label={label} style={{ borderRadius: 8, border: `0.5px solid ${C.border}`, aspectRatio: "1 / 1", background: C.bg, position: "relative", overflow: "hidden" }}>
+      <canvas ref={canvasRef} style={{ width: "100%", height: "100%", display: "block" }} />
       <div style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(13,17,23,0.8)", borderRadius: 4, padding: "3px 8px", fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: C.textMuted }}>
         {data ? population : "aguardando..."}
       </div>
@@ -478,21 +590,33 @@ function Screen2({ hypothesisId, cityId, hypothesisText, onBack }: {
   const [cidade, setCidade] = useState(cityId);
   const [r0Pct, setR0Pct] = useState(0.5);
   const [semPct, setSemPct] = useState(0.515);
-  const [toggles, setToggles] = useState({ ...hyp.defaultInterventions });
+  const [toggles, setToggles] = useState<InterventionSettings>(() => ({ ...hyp.defaultInterventions } as InterventionSettings));
+  const [expandedMeasure, setExpandedMeasure] = useState<InterventionKey>(
+    hyp.defaultInterventions.vaccination
+      ? "vaccination"
+      : hyp.defaultInterventions.masks
+        ? "masks"
+        : hyp.defaultInterventions.distancing
+          ? "distancing"
+          : "lockdown",
+  );
   const [simHover, setSimHover] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<SimResult | null>(null);
+  const [animationResult, setAnimationResult] = useState<SimResult | null>(null);
   const [currentWeek, setCurrentWeek] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const animRef = useRef<number | null>(null);
+  const timeoutRef = useRef<number | null>(null);
 
   const weeks = Math.round(1 + semPct * 99);
   const contagion = r0Pct;
 
   const runSimulation = useCallback(async () => {
-    setLoading(true); setError(null); setResult(null); setCurrentWeek(0); setIsAnimating(false);
+    setLoading(true); setError(null); setResult(null); setAnimationResult(null); setCurrentWeek(0); setIsAnimating(false);
     if (animRef.current) cancelAnimationFrame(animRef.current);
+    if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
     try {
       const body = {
         city: cidade, weeks, contagion_factor: contagion,
@@ -504,14 +628,18 @@ function Screen2({ hypothesisId, cityId, hypothesisText, onBack }: {
       const res = await fetch(`${API_URL}/simulate`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       if (!res.ok) throw new Error(`Erro na API: ${res.status}`);
       const data: SimResult = await res.json();
-      setResult(data); setIsAnimating(true);
+      setAnimationResult(data); setIsAnimating(true);
       let w = 1;
       const animate = () => {
         setCurrentWeek(w);
-        if (w < weeks) { w++; animRef.current = requestAnimationFrame(animate); }
-        else setIsAnimating(false);
+        if (w < weeks) { w++; timeoutRef.current = window.setTimeout(animate, 80); }
+        else {
+          setResult(data);
+          setAnimationResult(null);
+          setIsAnimating(false);
+        }
       };
-      animRef.current = requestAnimationFrame(animate);
+      timeoutRef.current = window.setTimeout(animate, 80);
     } catch {
       setError("Não foi possível conectar ao servidor. Verifique se o backend está rodando em localhost:8000");
     } finally {
@@ -519,18 +647,38 @@ function Screen2({ hypothesisId, cityId, hypothesisText, onBack }: {
     }
   }, [cidade, weeks, contagion, toggles]);
 
-  useEffect(() => { return () => { if (animRef.current) cancelAnimationFrame(animRef.current); }; }, []);
+  useEffect(() => {
+    return () => {
+      if (animRef.current) cancelAnimationFrame(animRef.current);
+      if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+    };
+  }, []);
 
   const savedLives = result ? Math.max(0, result.scenario1.final_deaths - result.scenario2.final_deaths) : 0;
   const savedPct = result && result.scenario1.final_deaths > 0 ? ((savedLives / result.scenario1.final_deaths) * 100).toFixed(1) : "0";
   const cityMeta = CITY_META[cidade] ?? { label: cidade, popFull: "—" };
+  const activeResult = animationResult ?? result;
 
-  const interventionToggles = [
-    { key: "vaccination"  as const, dot: C.green,   label: "Vacinação",             desc: "Imuniza parte da população antes do surto" },
-    { key: "masks"        as const, dot: C.amber,   label: "Uso de Máscaras",        desc: "Reduz a chance de transmissão no contato" },
-    { key: "distancing"   as const, dot: C.skyBlue, label: "Distanciamento Social",  desc: "Pessoas evitam aglomerações e contato próximo" },
-    { key: "lockdown"     as const, dot: C.red,     label: "Lockdown",               desc: "Fechamento total — máximo isolamento possível" },
-  ];
+  const weekInputStyle: React.CSSProperties = {
+    width: "100%",
+    background: C.bg,
+    border: `0.5px solid ${C.border}`,
+    borderRadius: 6,
+    color: C.textPrimary,
+    fontSize: 13,
+    padding: "8px 10px",
+    fontFamily: "'Inter', sans-serif",
+    outline: "none",
+    boxSizing: "border-box",
+  };
+
+  const helperTextStyle: React.CSSProperties = {
+    fontFamily: "'Inter', sans-serif",
+    fontSize: 11,
+    color: C.textMuted,
+    lineHeight: 1.45,
+    margin: 0,
+  };
 
   return (
     <div style={{ display: "flex", height: "100vh", background: C.bg, overflow: "hidden" }}>
@@ -574,20 +722,201 @@ function Screen2({ hypothesisId, cityId, hypothesisText, onBack }: {
         <SidebarSection style={{ flex: 1 }}>
           <SectionLabel>Medidas de proteção — Cenário 2</SectionLabel>
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: C.textMuted, marginBottom: 14, lineHeight: 1.5 }}>
-            Ative as medidas do Cenário 2. O Cenário 1 fica sempre sem proteção para comparar.
+            Clique em uma medida para abrir os campos de semana de início e adesão. O Cenário 1 fica sempre sem proteção para comparar.
           </p>
-          {interventionToggles.map(({ key, dot, label, desc }) => (
-            <div key={key} style={{ marginBottom: 10, background: toggles[key] ? "rgba(74,222,128,0.04)" : "transparent", border: `0.5px solid ${toggles[key] ? C.green : "transparent"}`, borderRadius: 8, padding: "8px 10px", transition: "all 0.15s ease" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                  <div style={{ width: 7, height: 7, borderRadius: "50%", background: dot, flexShrink: 0 }} />
-                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 500, color: toggles[key] ? C.textPrimary : "#C9D1D9" }}>{label}</span>
-                </div>
-                <Toggle on={toggles[key]} onChange={() => setToggles((t) => ({ ...t, [key]: !t[key] }))} />
+          <MeasurePanel
+            title="Vacinação"
+            dot={C.green}
+            desc="Imuniza parte da população antes do surto"
+            enabled={toggles.vaccination}
+            expanded={expandedMeasure === "vaccination"}
+            onToggle={() => setToggles((t) => {
+              const nextEnabled = !t.vaccination;
+              if (nextEnabled) setExpandedMeasure("vaccination");
+              return { ...t, vaccination: nextEnabled };
+            })}
+            onExpand={() => setExpandedMeasure("vaccination")}
+          >
+            <Slider
+              label="Cobertura da vacinação"
+              displayValue={`${Math.round(toggles.vaccination_pct * 100)}% da população`}
+              pct={toggles.vaccination_pct}
+              onPctChange={(value) => setToggles((t) => ({ ...t, vaccination_pct: value }))}
+            />
+            <div style={{ marginTop: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+                <span style={helperTextStyle}>Semana de início</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.green }}>Semana {toggles.vaccination_week}</span>
               </div>
-              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: C.textMuted, margin: 0, lineHeight: 1.4, paddingLeft: 14 }}>{desc}</p>
+              <input
+                type="number"
+                min={1}
+                max={weeks}
+                value={toggles.vaccination_week}
+                onChange={(e) => setToggles((t) => ({ ...t, vaccination_week: Math.max(1, Math.min(weeks, Number(e.target.value) || 1)) }))}
+                style={weekInputStyle}
+              />
             </div>
-          ))}
+          </MeasurePanel>
+
+          <MeasurePanel
+            title="Uso de Máscaras"
+            dot={C.amber}
+            desc="Reduz a chance de transmissão no contato"
+            enabled={toggles.masks}
+            expanded={expandedMeasure === "masks"}
+            onToggle={() => setToggles((t) => {
+              const nextEnabled = !t.masks;
+              if (nextEnabled) setExpandedMeasure("masks");
+              return { ...t, masks: nextEnabled };
+            })}
+            onExpand={() => setExpandedMeasure("masks")}
+          >
+            <Slider
+              label="Aderência ao uso de máscaras"
+              displayValue={`${Math.round(toggles.masks_adherence * 100)}% da população`}
+              pct={toggles.masks_adherence}
+              onPctChange={(value) => setToggles((t) => ({ ...t, masks_adherence: value }))}
+            />
+            <div style={{ marginTop: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+                <span style={helperTextStyle}>Semana de início</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.amber }}>Semana {toggles.masks_start}</span>
+              </div>
+              <input
+                type="number"
+                min={1}
+                max={weeks}
+                value={toggles.masks_start}
+                onChange={(e) => setToggles((t) => {
+                  const nextStart = Math.max(1, Math.min(weeks, Number(e.target.value) || 1));
+                  return { ...t, masks_start: nextStart, masks_end: Math.max(nextStart, t.masks_end) };
+                })}
+                style={weekInputStyle}
+              />
+            </div>
+            <div style={{ marginTop: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+                <span style={helperTextStyle}>Semana de término</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.amber }}>Semana {toggles.masks_end}</span>
+              </div>
+              <input
+                type="number"
+                min={toggles.masks_start}
+                max={weeks}
+                value={toggles.masks_end}
+                onChange={(e) => setToggles((t) => ({ ...t, masks_end: Math.max(t.masks_start, Math.min(weeks, Number(e.target.value) || t.masks_start)) }))}
+                style={weekInputStyle}
+              />
+              <p style={{ ...helperTextStyle, marginTop: 8 }}>A medida fica ativa apenas no período configurado.</p>
+            </div>
+          </MeasurePanel>
+
+          <MeasurePanel
+            title="Distanciamento Social"
+            dot={C.skyBlue}
+            desc="Pessoas evitam aglomerações e contato próximo"
+            enabled={toggles.distancing}
+            expanded={expandedMeasure === "distancing"}
+            onToggle={() => setToggles((t) => {
+              const nextEnabled = !t.distancing;
+              if (nextEnabled) setExpandedMeasure("distancing");
+              return { ...t, distancing: nextEnabled };
+            })}
+            onExpand={() => setExpandedMeasure("distancing")}
+          >
+            <Slider
+              label="Aderência ao distanciamento"
+              displayValue={`${Math.round(toggles.distancing_intensity * 100)}% da população`}
+              pct={toggles.distancing_intensity}
+              onPctChange={(value) => setToggles((t) => ({ ...t, distancing_intensity: value }))}
+            />
+            <div style={{ marginTop: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+                <span style={helperTextStyle}>Semana de início</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.skyBlue }}>Semana {toggles.distancing_start}</span>
+              </div>
+              <input
+                type="number"
+                min={1}
+                max={weeks}
+                value={toggles.distancing_start}
+                onChange={(e) => setToggles((t) => {
+                  const nextStart = Math.max(1, Math.min(weeks, Number(e.target.value) || 1));
+                  return { ...t, distancing_start: nextStart, distancing_end: Math.max(nextStart, t.distancing_end) };
+                })}
+                style={weekInputStyle}
+              />
+            </div>
+            <div style={{ marginTop: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+                <span style={helperTextStyle}>Semana de término</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.skyBlue }}>Semana {toggles.distancing_end}</span>
+              </div>
+              <input
+                type="number"
+                min={toggles.distancing_start}
+                max={weeks}
+                value={toggles.distancing_end}
+                onChange={(e) => setToggles((t) => ({ ...t, distancing_end: Math.max(t.distancing_start, Math.min(weeks, Number(e.target.value) || t.distancing_start)) }))}
+                style={weekInputStyle}
+              />
+              <p style={{ ...helperTextStyle, marginTop: 8 }}>A medida fica ativa apenas no período configurado.</p>
+            </div>
+          </MeasurePanel>
+
+          <MeasurePanel
+            title="Lockdown"
+            dot={C.red}
+            desc="Fechamento total — máximo isolamento possível"
+            enabled={toggles.lockdown}
+            expanded={expandedMeasure === "lockdown"}
+            onToggle={() => setToggles((t) => {
+              const nextEnabled = !t.lockdown;
+              if (nextEnabled) setExpandedMeasure("lockdown");
+              return { ...t, lockdown: nextEnabled };
+            })}
+            onExpand={() => setExpandedMeasure("lockdown")}
+          >
+            <Slider
+              label="Aderência ao lockdown"
+              displayValue={`${Math.round(toggles.lockdown_intensity * 100)}% da população`}
+              pct={toggles.lockdown_intensity}
+              onPctChange={(value) => setToggles((t) => ({ ...t, lockdown_intensity: value }))}
+            />
+            <div style={{ marginTop: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+                <span style={helperTextStyle}>Semana de início</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.red }}>Semana {toggles.lockdown_start}</span>
+              </div>
+              <input
+                type="number"
+                min={1}
+                max={weeks}
+                value={toggles.lockdown_start}
+                onChange={(e) => setToggles((t) => {
+                  const nextStart = Math.max(1, Math.min(weeks, Number(e.target.value) || 1));
+                  return { ...t, lockdown_start: nextStart, lockdown_end: Math.max(nextStart, t.lockdown_end) };
+                })}
+                style={weekInputStyle}
+              />
+            </div>
+            <div style={{ marginTop: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+                <span style={helperTextStyle}>Semana de término</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.red }}>Semana {toggles.lockdown_end}</span>
+              </div>
+              <input
+                type="number"
+                min={toggles.lockdown_start}
+                max={weeks}
+                value={toggles.lockdown_end}
+                onChange={(e) => setToggles((t) => ({ ...t, lockdown_end: Math.max(t.lockdown_start, Math.min(weeks, Number(e.target.value) || t.lockdown_start)) }))}
+                style={weekInputStyle}
+              />
+              <p style={{ ...helperTextStyle, marginTop: 8 }}>A medida fica ativa apenas no período configurado.</p>
+            </div>
+          </MeasurePanel>
         </SidebarSection>
 
         <div style={{ margin: "14px 16px" }}>
@@ -641,19 +970,26 @@ function Screen2({ hypothesisId, cityId, hypothesisText, onBack }: {
                 <SectionLabel>Cenário 1 — Sem proteção</SectionLabel>
                 <span style={{ marginTop: -10, flexShrink: 0 }}><TagPill label="CONTROLE" /></span>
               </div>
-              <PopulationGrid data={result?.scenario1 ?? null} week={currentWeek} label="s1" population={cityMeta.popFull} />
+              <PopulationGrid data={activeResult?.scenario1 ?? null} week={currentWeek} label="s1" population={cityMeta.popFull} />
             </div>
             <div style={{ width: 280, flexShrink: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                 <SectionLabel>Cenário 2 — Com medidas</SectionLabel>
                 <span style={{ marginTop: -10, flexShrink: 0 }}><TagPill label="INTERVENÇÃO" /></span>
               </div>
-              <PopulationGrid data={result?.scenario2 ?? null} week={currentWeek} label="s2" population={cityMeta.popFull} />
+              <PopulationGrid data={activeResult?.scenario2 ?? null} week={currentWeek} label="s2" population={cityMeta.popFull} />
             </div>
           </div>
 
           {/* GRID LEGEND */}
           <GridLegend />
+
+          {/* LOADING STATE */}
+          {isAnimating && !result && (
+            <div style={{ padding: "8px 20px 0" }}>
+              <LoadingSpinner />
+            </div>
+          )}
 
           {/* EMPTY STATE */}
           {!result && !loading && !error && (
@@ -667,12 +1003,12 @@ function Screen2({ hypothesisId, cityId, hypothesisText, onBack }: {
           )}
 
           {/* STATS */}
-          {result && (
+          {result && !isAnimating && (
             <>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, padding: "12px 20px 14px" }}>
                 {[
-                  { value: result.scenario1.final_deaths.toLocaleString("pt-BR"), valueColor: C.red,     label: "mortes sem proteção",      delta: `${((result.scenario1.final_deaths / result.scenario1.total_population) * 100).toFixed(1)}% da população`, deltaColor: C.red     },
-                  { value: result.scenario2.final_deaths.toLocaleString("pt-BR"), valueColor: C.green,   label: "mortes com proteção",      delta: savedLives > 0 ? `${savedPct}% menos` : "mesmo resultado",                                                       deltaColor: C.green   },
+                  { value: result.scenario1.final_deaths.toLocaleString("pt-BR"), valueColor: C.red,     label: "mortes no cenário sem intervenção",      delta: `${((result.scenario1.final_deaths / result.scenario1.total_population) * 100).toFixed(1)}% da população simulada`, deltaColor: C.red     },
+                  { value: result.scenario2.final_deaths.toLocaleString("pt-BR"), valueColor: C.green,   label: "mortes no cenário com intervenção",      delta: savedLives > 0 ? `${savedPct}% menos na população simulada` : "mesmo resultado",                                                       deltaColor: C.green   },
                   { value: savedLives.toLocaleString("pt-BR"),                    valueColor: C.skyBlue, label: "vidas salvas",              delta: `${savedPct}% a menos`,                                                                                           deltaColor: C.skyBlue },
                 ].map(({ value, valueColor, label, delta, deltaColor }) => (
                   <div key={label} style={{ background: C.surface, border: `0.5px solid ${C.border}`, borderRadius: 8, padding: "10px 12px" }}>
