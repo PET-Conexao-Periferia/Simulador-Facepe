@@ -42,7 +42,6 @@ const HYPOTHESES = [
     id: "vacina", badge: "MISSÃO 01", dot: C.green,
     title: "A vacina salva vidas?",
     desc: "Teste com e sem vacina e compare os resultados.",
-    tag: "Ideal para começar", tagBg: "#0D2818", tagColor: C.green, tagBorder: "#166534",
     missionTitle: "Uma gripe chegou em Igarassu. O que você faz?",
     missionBody: "Um estudante da sua escola chegou gripado. Nos próximos dias, mais colegas começam a faltar. Você é o responsável pela saúde da cidade — decide: vacinar, exigir máscaras, pedir distanciamento... ou não fazer nada?",
     hypothesis: "💡 Cidades que vacinam a população têm menos mortes do que cidades que não vacinam, mesmo com o mesmo vírus.",
@@ -52,7 +51,6 @@ const HYPOTHESES = [
     id: "mascara", badge: "MISSÃO 02", dot: C.amber,
     title: "Máscara ou distanciamento?",
     desc: "Qual medida evita mais mortes quando usada sozinha?",
-    tag: "Nível intermediário", tagBg: "#1C1407", tagColor: C.amber, tagBorder: "#78350F",
     missionTitle: "O prefeito te ligou. Você tem verba para uma só medida.",
     missionBody: "Há casos confirmados na cidade. O orçamento é limitado — só dá para uma medida. O que salva mais vidas: obrigar máscara em lugares públicos ou pedir que as pessoas fiquem em casa?",
     hypothesis: "💡 O distanciamento social evita mais mortes do que o uso de máscara quando apenas uma dessas medidas é adotada.",
@@ -62,7 +60,6 @@ const HYPOTHESES = [
     id: "sem-intervencao", badge: "MISSÃO 03", dot: C.red,
     title: "O que acontece sem nenhuma ação?",
     desc: "Veja o impacto real quando ninguém toma nenhuma medida.",
-    tag: "Nível avançado", tagBg: "#1A0808", tagColor: C.red, tagBorder: "#7F1D1D",
     missionTitle: "O pior cenário. Sem vacina, sem máscara, sem nada.",
     missionBody: "Nenhuma vacina, máscara, distanciamento ou lockdown. O vírus se espalha livremente. Execute a simulação e veja os números reais.",
     hypothesis: "💡 Sem nenhuma medida de proteção, o número de mortes cresce tão rápido que ultrapassa a capacidade dos hospitais em menos de 8 semanas.",
@@ -72,7 +69,6 @@ const HYPOTHESES = [
     id: "livre", badge: "MISSÃO 04", dot: C.skyBlue,
     title: "Criar minha própria hipótese",
     desc: "Você escolhe todas as variáveis e define o que quer testar.",
-    tag: "Modo livre", tagBg: "#071626", tagColor: C.skyBlue, tagBorder: "#075985",
     missionTitle: "Agora você é o cientista. O que você quer descobrir?",
     missionBody: "Monte os dois cenários do zero. Escolha a taxa de transmissão, as medidas e a cidade. Antes de rodar, escreva o que você acha que vai acontecer — isso é uma hipótese científica.",
     hypothesis: "",
@@ -197,8 +193,22 @@ function Footer() {
   );
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: C.textSecondary, marginBottom: 14 }}>{children}</div>;
+function SectionLabel({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  return (
+    <div
+      style={{
+        fontFamily: "'JetBrains Mono', monospace",
+        fontSize: 12,
+        letterSpacing: "0.08em",
+        textTransform: "uppercase" as const,
+        color: C.textSecondary,
+        marginBottom: 14,
+        ...style,
+      }}
+    >
+      {children}
+    </div>
+  );
 }
 
 function TagPill({ label, bg = C.elevated, color = C.textSecondary, border = C.border }: { label: string; bg?: string; color?: string; border?: string }) {
@@ -221,10 +231,10 @@ function MissionCard({ badge, title, body, hypothesis, isEditable, onHypothesisC
         <div style={{ marginBottom: 12 }}>
           <TagPill label={badge} bg="#0D2818" color={C.green} border={C.greenDark} />
         </div>
-        <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, fontWeight: 500, color: C.textPrimary, lineHeight: 1.35, marginBottom: 12 }}>
+        <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 22, fontWeight: 500, color: C.textPrimary, lineHeight: 1.35, marginBottom: 12 }}>
           {title}
         </div>
-        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, color: C.textSecondary, lineHeight: 1.65, margin: "0 0 14px" }}>
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 15, color: C.textSecondary, lineHeight: 1.65, margin: "0 0 14px" }}>
           {body}
         </p>
         {isEditable ? (
@@ -233,10 +243,10 @@ function MissionCard({ badge, title, body, hypothesis, isEditable, onHypothesisC
             onChange={(e) => onHypothesisChange?.(e.target.value)}
             placeholder="💡 Escreva aqui o que você acha que vai acontecer antes de simular..."
             rows={2}
-            style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: C.skyBlue58, background: "rgba(31,111,235,0.08)", border: "0.5px solid rgba(31,111,235,0.30)", borderRadius: 6, padding: "8px 12px", lineHeight: 1.5, marginTop: 8, width: "100%", boxSizing: "border-box" as const, resize: "none", outline: "none", cursor: "text", display: "block" }}
+            style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: C.skyBlue58, background: "rgba(31,111,235,0.08)", border: "0.5px solid rgba(31,111,235,0.30)", borderRadius: 6, padding: "8px 12px", lineHeight: 1.5, marginTop: 8, width: "100%", boxSizing: "border-box" as const, resize: "none", outline: "none", cursor: "text", display: "block" }}
           />
         ) : (
-          <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: C.green, background: "rgba(74,222,128,0.07)", border: "0.5px solid rgba(74,222,128,0.25)", borderRadius: 6, padding: "8px 12px", lineHeight: 1.5, marginTop: 8 }}>
+          <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: C.green, background: "rgba(74,222,128,0.07)", border: "0.5px solid rgba(74,222,128,0.25)", borderRadius: 6, padding: "8px 12px", lineHeight: 1.5, marginTop: 8 }}>
             {hypothesis}
           </div>
         )}
@@ -258,9 +268,8 @@ function HypothesisCard({ hyp, isSelected, isHovered, onSelect, onHover }: {
         <TagPill label={hyp.badge} />
         <div style={{ width: 8, height: 8, borderRadius: "50%", background: hyp.dot, flexShrink: 0 }} />
       </div>
-      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 500, color: C.textPrimary, lineHeight: 1.35, marginBottom: 6 }}>{hyp.title}</div>
-      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: C.textSecondary, lineHeight: 1.5, margin: "0 0 10px" }}>{hyp.desc}</p>
-      <TagPill label={hyp.tag} bg={hyp.tagBg} color={hyp.tagColor} border={hyp.tagBorder} />
+      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 15, fontWeight: 500, color: C.textPrimary, lineHeight: 1.35, marginBottom: 6 }}>{hyp.title}</div>
+      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: C.textSecondary, lineHeight: 1.5, margin: "0 0 10px" }}>{hyp.desc}</p>
     </button>
   );
 }
@@ -273,7 +282,7 @@ function CityPill({ city, isSelected, onClick }: { city: (typeof CITIES)[number]
     <button onClick={onClick} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
       style={{ all: "unset", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, background: isSelected ? "#0D2818" : C.surface, border: (isSelected || hovered) ? `0.5px solid ${C.green}` : `0.5px solid ${C.border}`, borderRadius: 8, padding: "6px 14px", transition: "all 0.15s ease" }}>
       <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: isSelected ? C.green : hovered ? "#C9D1D9" : C.textSecondary, transition: "color 0.15s ease" }}>{city.name}</span>
-      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#4D78AB" }}>{city.pop}</span>
+      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: "#4D78AB" }}>{city.pop}</span>
     </button>
   );
 }
@@ -319,7 +328,7 @@ function Screen1({ onStart, onNavigate }: { onStart: (hId: string, cId: string, 
       </header>
 
       <main style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", padding: "36px 24px 56px", overflowY: "auto", position: "relative", zIndex: 2 }}>
-        <div style={{ width: "100%", maxWidth: 560 }}>
+        <div style={{ width: "100%", maxWidth: 750 }}>
           <MissionCard
             badge={displayedHyp.badge} title={displayedHyp.missionTitle}
             body={displayedHyp.missionBody} hypothesis={hypothesisText}
@@ -347,9 +356,6 @@ function Screen1({ onStart, onNavigate }: { onStart: (hId: string, cId: string, 
             style={{ all: "unset", cursor: "pointer", width: "100%", boxSizing: "border-box" as const, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: ctaHovered ? C.greenHover : C.greenDark, borderRadius: 8, padding: "13px 20px", transition: "background 0.15s ease" }}>
             <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 500, color: "#fff" }}>▶ Começar simulação — {activeHyp.badge}</span>
           </button>
-          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: C.textMuted, textAlign: "center" as const, marginTop: 10, marginBottom: 0, lineHeight: 1.5 }}>
-            A simulação usa um modelo matemático real chamado Random Walk — cada quadradinho representa uma pessoa da cidade.
-          </p>
         </div>
       </main>
       <Footer />
@@ -441,7 +447,7 @@ function MeasurePanel({
         </div>
       </div>
 
-      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 11, color: C.textMuted, margin: "6px 0 0", lineHeight: 1.4, paddingLeft: 14 }}>
+      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: C.textMuted, margin: "6px 0 0", lineHeight: 1.4, paddingLeft: 14 }}>
         {desc}
       </p>
 
@@ -699,7 +705,7 @@ function Screen2({ hypothesisId, cityId, hypothesisText, onBack }: {
         </div>
 
         <SidebarSection>
-          <SectionLabel>Cidade simulada</SectionLabel>
+          <SectionLabel style={{fontSize: 11}}>Cidade simulada</SectionLabel>
           <div style={{ position: "relative" }}>
             <select value={cidade} onChange={(e) => setCidade(e.target.value)}
               style={{ width: "100%", background: C.elevated, border: `0.5px solid ${C.border}`, borderRadius: 6, color: C.textPrimary, fontSize: 13, padding: "7px 28px 7px 10px", appearance: "none" as const, cursor: "pointer", fontFamily: "'Inter', sans-serif", outline: "none", boxSizing: "border-box" as const }}>
@@ -714,14 +720,14 @@ function Screen2({ hypothesisId, cityId, hypothesisText, onBack }: {
         </SidebarSection>
 
         <SidebarSection>
-          <SectionLabel>Parâmetros do vírus</SectionLabel>
+          <SectionLabel style={{fontSize: 11}}>Parâmetros do vírus</SectionLabel>
           <Slider label="Velocidade de contágio" displayValue={`R₀ = ${(r0Pct * 4).toFixed(1)}`} pct={r0Pct} onPctChange={setR0Pct} />
           <Slider label="Duração da simulação" displayValue={`${weeks} semanas`} pct={semPct} onPctChange={setSemPct} />
         </SidebarSection>
 
         <SidebarSection style={{ flex: 1 }}>
-          <SectionLabel>Medidas de proteção — Cenário 2</SectionLabel>
-          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, color: C.textMuted, marginBottom: 14, lineHeight: 1.5 }}>
+          <SectionLabel style={{fontSize: 11}}>Medidas de proteção — Cenário 2</SectionLabel>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: C.textMuted, marginBottom: 14, lineHeight: 1.5 }}>
             Clique em uma medida para abrir os campos de semana de início e adesão. O Cenário 1 fica sempre sem proteção para comparar.
           </p>
           <MeasurePanel
@@ -968,7 +974,7 @@ function Screen2({ hypothesisId, cityId, hypothesisText, onBack }: {
             <div style={{ width: 280, flexShrink: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                 <SectionLabel>Cenário 1 — Sem proteção</SectionLabel>
-                <span style={{ marginTop: -10, flexShrink: 0 }}><TagPill label="CONTROLE" /></span>
+                <span style={{ marginTop: -10, marginLeft: 10, flexShrink: 0 }}><TagPill label="CONTROLE" /></span>
               </div>
               <PopulationGrid data={activeResult?.scenario1 ?? null} week={currentWeek} label="s1" population={cityMeta.popFull} />
             </div>
@@ -1058,10 +1064,10 @@ function ScreenAbout({ onNavigate }: { onNavigate: (s: AppScreen) => void }) {
     <div style={{ background: C.surface, border: `0.5px solid ${C.border}`, borderRadius: 8, padding: 24, marginBottom: 16 }}>{children}</div>
   );
   const H2 = ({ children }: { children: React.ReactNode }) => (
-    <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, fontWeight: 500, color: C.textPrimary, margin: "0 0 14px", lineHeight: 1.3 }}>{children}</h2>
+    <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 22, fontWeight: 500, color: C.textPrimary, margin: "0 0 14px", lineHeight: 1.3 }}>{children}</h2>
   );
   const Body = ({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) => (
-    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, color: C.textSecondary, lineHeight: 1.7, margin: 0, ...style }}>{children}</p>
+    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 15, color: C.textSecondary, lineHeight: 1.7, margin: 0, ...style }}>{children}</p>
   );
 
   const steps = [
@@ -1087,7 +1093,7 @@ function ScreenAbout({ onNavigate }: { onNavigate: (s: AppScreen) => void }) {
       </header>
 
       <main style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", padding: "36px 24px 56px", overflowY: "auto", position: "relative", zIndex: 2 }}>
-        <div style={{ width: "100%", maxWidth: 600 }}>
+        <div style={{ width: "100%", maxWidth: 750 }}>
           <Card>
             <H2>🏫 Quem somos?</H2>
             <Body style={{ marginBottom: 12 }}>Somos o <strong style={{ color: C.textPrimary, fontWeight: 500 }}>PET Conexão Periferia</strong>, o primeiro grupo do Programa de Educação Tutorial (PET) do IFPE, vinculado ao curso de Sistemas para Internet do Campus Igarassu.</Body>
@@ -1096,6 +1102,7 @@ function ScreenAbout({ onNavigate }: { onNavigate: (s: AppScreen) => void }) {
 
           <Card>
             <H2>🦠 Sobre o Simulador</H2>
+            <Body style={{ marginBottom: 12 }}>O PeriferiaLab foi desenvolvido pelo PET Conexão Periferia do IFPE – Campus Igarassu com apoio da Fundação de Amparo à Ciência e Tecnologia do Estado de Pernambuco (FACEPE), por meio de projeto de incentivo à pesquisa e inovação. O simulador tem como objetivo promover a alfabetização científica por meio da experimentação de cenários epidemiológicos de forma interativa.</Body>
             <Body>Aqui, você assume o papel de quem precisa tomar decisões durante uma pandemia. Seu desafio é entender como diferentes medidas — vacina, máscara, distanciamento, lockdown — podem mudar quantas pessoas sobrevivem.</Body>
           </Card>
 
@@ -1104,8 +1111,8 @@ function ScreenAbout({ onNavigate }: { onNavigate: (s: AppScreen) => void }) {
             <div>
               {steps.map((step, i) => (
                 <div key={i} style={{ display: "flex", gap: 12, marginBottom: i < steps.length - 1 ? 12 : 0, alignItems: "flex-start" }}>
-                  <div style={{ width: 24, height: 24, borderRadius: "50%", background: C.elevated, border: `0.5px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: C.green, flexShrink: 0 }}>{i + 1}</div>
-                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, color: C.textSecondary, lineHeight: 1.6, paddingTop: 3 }}>{step}</span>
+                  <div style={{ width: 24, height: 24, borderRadius: "50%", background: C.elevated, border: `0.5px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: 14, color: C.green, flexShrink: 0 }}>{i + 1}</div>
+                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 15, color: C.textSecondary, lineHeight: 1.6, paddingTop: 3 }}>{step}</span>
                 </div>
               ))}
             </div>
@@ -1133,13 +1140,26 @@ function ScreenAbout({ onNavigate }: { onNavigate: (s: AppScreen) => void }) {
               {outcomes.map((item) => (
                 <div key={item} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ width: 5, height: 5, borderRadius: "50%", background: C.green, flexShrink: 0 }} />
-                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: C.textSecondary }}>{item}</span>
+                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 15, color: C.textSecondary }}>{item}</span>
                 </div>
               ))}
             </div>
             <div style={{ background: C.bg, border: "0.5px solid rgba(74,222,128,0.2)", borderRadius: 6, padding: "12px 16px" }}>
               <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, color: C.green, margin: 0, lineHeight: 1.6, fontWeight: 500 }}>Cada decisão gera um resultado diferente. Qual será o impacto das suas escolhas?</p>
             </div>
+          </Card>
+
+          <Card>
+            <H2>Conheça o PET Conexão Periferia</H2>
+            <Body style={{ marginBottom: 12 }}>Saiba mais sobre o grupo PET e suas ações no portal oficial do IFPE:</Body>
+            <a
+            href="https://portal.ifpe.edu.br/igarassu/ensino/pet/"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: C.green }}
+          >
+            https://portal.ifpe.edu.br/igarassu/ensino/pet/
+          </a>
           </Card>
 
           <button onClick={() => onNavigate("home")} onMouseEnter={() => setCtaHovered(true)} onMouseLeave={() => setCtaHovered(false)}
