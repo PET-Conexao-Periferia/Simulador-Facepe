@@ -50,7 +50,7 @@ class RandomWalkModel:
         self.transitionProbabilities = [[1.0, 0.0, 0.0, 0.0],  # Healthy transitions
                                         [0.1, 0.2, 0.3, 0.4],  # Sick transitions
                                         [0.0, 0.0, 1.0, 0.0],    # Dead transitions
-                                        [0.1, 0.0, 0.0, 0.9]]  # Immune transitions
+                                        [0.03, 0.0, 0.0, 0.97]]  # Immune transitions
         
         self.contagionFactor = 0.5  # Probability of getting sick after interaction with a sick individual
         self.socialDistanceEffect = 0.0 # Probability of avoiding contact because of social distancing
