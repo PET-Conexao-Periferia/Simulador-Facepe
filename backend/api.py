@@ -118,16 +118,31 @@ def run_scenario(grid_size: int, weeks: int, base_contagion: float, intervention
     )
 
 
+def intervention_settings(req: SimulationRequest) -> dict:
+    return {
+        "vaccination": req.vaccination,
+        "vaccination_pct": req.vaccination_pct,
+        "vaccination_week": req.vaccination_week,
+        "masks": req.masks,
+        "masks_adherence": req.masks_adherence,
+        "masks_start": req.masks_start,
+        "masks_end": req.masks_end,
+        "distancing": req.distancing,
+        "distancing_intensity": req.distancing_intensity,
+        "distancing_start": req.distancing_start,
+        "distancing_end": req.distancing_end,
+        "lockdown": req.lockdown,
+        "lockdown_intensity": req.lockdown_intensity,
+        "lockdown_start": req.lockdown_start,
+        "lockdown_end": req.lockdown_end,
+    }
+
+
 @app.post("/simulate", response_model=SimulationResponse)
 def simulate(req: SimulationRequest):
     grid_size = grid_size_for_city(req.city)
     s1 = run_scenario(grid_size, req.weeks, req.contagion_factor, {})
-    s2 = run_scenario(grid_size, req.weeks, req.contagion_factor, {
-        "vaccination": req.vaccination, "vaccination_pct": req.vaccination_pct, "vaccination_week": req.vaccination_week,
-        "masks": req.masks, "masks_start": req.masks_start, "masks_end": req.masks_end,
-        "distancing": req.distancing, "distancing_start": req.distancing_start, "distancing_end": req.distancing_end,
-        "lockdown": req.lockdown, "lockdown_start": req.lockdown_start, "lockdown_end": req.lockdown_end,
-    })
+    s2 = run_scenario(grid_size, req.weeks, req.contagion_factor, intervention_settings(req))
     return SimulationResponse(scenario1=s1, scenario2=s2)
 
 @app.get("/")
