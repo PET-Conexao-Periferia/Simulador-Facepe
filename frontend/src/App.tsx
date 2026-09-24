@@ -539,7 +539,7 @@ function PopulationGrid({ data, week, label, population }: { data: ScenarioResul
   }, [snapshot, gridSize]);
 
   return (
-    <div ref={containerRef} aria-label={label} style={{ borderRadius: 8, border: `0.5px solid ${C.border}`, aspectRatio: "1 / 1", background: C.bg, position: "relative", overflow: "hidden" }}>
+    <div className="population-grid" ref={containerRef} aria-label={label} style={{ borderRadius: 8, border: `0.5px solid ${C.border}`, aspectRatio: "1 / 1", background: C.bg, position: "relative", overflow: "hidden" }}>
       <canvas ref={canvasRef} style={{ width: "100%", height: "100%", display: "block" }} />
       <div style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(13,17,23,0.8)", borderRadius: 4, padding: "3px 8px", fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: C.textMuted }}>
         {data ? population : "aguardando..."}
@@ -687,11 +687,59 @@ function Screen2({ hypothesisId, cityId, hypothesisText, onBack }: {
   };
 
   return (
-    <div style={{ display: "flex", height: "100vh", background: C.bg, overflow: "hidden" }}>
-      <style>{`@keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.3} }`}</style>
+    <div className="simulation-screen" style={{ display: "flex", height: "100vh", background: C.bg, overflow: "hidden" }}>
+      <style>{`
+        @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.3} }
+        .simulation-screen .simulation-sidebar { width: 270px; }
+        .simulation-screen .simulation-main { flex: 1; min-width: 0; }
+        .simulation-screen .scenario-grids {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 24px;
+          width: 100%;
+          margin: 0 auto;
+          padding: 16px 20px 0;
+          box-sizing: border-box;
+        }
+        .simulation-screen .scenario-card { min-width: 0; }
+        .simulation-screen .population-grid {
+          width: min(100%, calc(100vh - 480px));
+          margin: 0 auto;
+        }
+        @media (max-width: 900px) {
+          .simulation-screen {
+            height: auto !important;
+            min-height: 100vh;
+            overflow: visible !important;
+            flex-direction: column;
+          }
+          .simulation-screen .simulation-sidebar {
+            width: 100%;
+            max-height: none;
+            overflow: visible;
+          }
+          .simulation-screen .simulation-main {
+            min-height: 0;
+            overflow: visible !important;
+          }
+          .simulation-screen .scenario-grids {
+            grid-template-columns: 1fr;
+            width: 100%;
+            gap: 20px;
+          }
+          .simulation-screen .scenario-card {
+            width: min(100%, 520px);
+            margin: 0 auto;
+          }
+          .simulation-screen .population-grid {
+            width: 100%;
+            max-width: 520px;
+          }
+        }
+      `}</style>
 
       {/* ── SIDEBAR ──────────────────────────────────────────────────────── */}
-      <aside style={{ width: 270, flexShrink: 0, background: C.surface, borderRight: `0.5px solid ${C.border}`, display: "flex", flexDirection: "column", overflowY: "auto" }}>
+      <aside className="simulation-sidebar" style={{ flexShrink: 0, background: C.surface, borderRight: `0.5px solid ${C.border}`, display: "flex", flexDirection: "column", overflowY: "auto" }}>
 
         <div style={{ padding: "14px 16px", borderBottom: `0.5px solid ${C.border}` }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -935,7 +983,7 @@ function Screen2({ hypothesisId, cityId, hypothesisText, onBack }: {
       </aside>
 
       {/* ── MAIN PANEL ───────────────────────────────────────────────────── */}
-      <main style={{ flex: 1, background: C.bg, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
+      <main className="simulation-main" style={{ background: C.bg, display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
         {/* TOP BAR */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", borderBottom: `0.5px solid ${C.border}`, flexShrink: 0 }}>
@@ -970,15 +1018,15 @@ function Screen2({ hypothesisId, cityId, hypothesisText, onBack }: {
         <div style={{ flex: 1, overflowY: "auto" }}>
 
           {/* GRIDS */}
-          <div style={{ display: "flex", justifyContent: "center", gap: 32, padding: "16px 20px 0" }}>
-            <div style={{ width: 280, flexShrink: 0 }}>
+          <div className="scenario-grids">
+            <div className="scenario-card">
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                 <SectionLabel>Cenário 1 — Sem proteção</SectionLabel>
                 <span style={{ marginTop: -10, marginLeft: 10, flexShrink: 0 }}><TagPill label="CONTROLE" /></span>
               </div>
               <PopulationGrid data={activeResult?.scenario1 ?? null} week={currentWeek} label="s1" population={cityMeta.popFull} />
             </div>
-            <div style={{ width: 280, flexShrink: 0 }}>
+            <div className="scenario-card">
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                 <SectionLabel>Cenário 2 — Com medidas</SectionLabel>
                 <span style={{ marginTop: -10, flexShrink: 0 }}><TagPill label="INTERVENÇÃO" /></span>
