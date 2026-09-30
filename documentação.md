@@ -89,7 +89,7 @@ npm run dev
 
 ---
 
-## 5. Entendendo a Regra de Negócio
+## 4. Entendendo a Regra de Negócio
 
 Para atuar neste projeto, é crucial entender os parâmetros enviados na requisição da simulação, localizados em `backend/api.py`.
 
